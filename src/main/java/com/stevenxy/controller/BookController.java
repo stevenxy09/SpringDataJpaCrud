@@ -1,17 +1,26 @@
 package com.stevenxy.controller;
 
-import javax.annotation.Resource;
+import java.util.List;
 
+import javax.annotation.Resource;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
 import com.stevenxy.dao.BookDao;
 import com.stevenxy.entity.Book;
+
 
 /**
 * @author stevenxy E-mail:random_xy@163.com
@@ -82,6 +91,50 @@ public class BookController {
 	public String delete(Integer id) {
 		bookDao.deleteById(id);
 		return "forward:/book/list";
+	}
+	
+	@ResponseBody
+	@GetMapping("/findByName")
+	public List<Book> findByName(String name){
+		
+		return bookDao.findByName(name);
+	}
+	
+	@ResponseBody
+	@GetMapping("/randomList")
+	public List<Book> randomList(Integer n){
+		
+		return bookDao.randomList(n);
+	}
+	
+	/**
+	 * 根据条件查询图书
+	 * @return
+	 */
+	@RequestMapping(value="/list2")
+	public ModelAndView list2(Book book) {
+		ModelAndView mav=new ModelAndView();
+		List<Book> bookList=bookDao.findAll(new Specification<Book>() {
+			
+			private static final long serialVersionUID = -4082638366492629927L;
+
+			@Override
+			public Predicate toPredicate(Root<Book> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+				Predicate predicate=cb.conjunction();
+				if(book!=null) {
+					if(book.getName()!=null&&!"".equals(book.getName())) {
+						predicate.getExpressions().add(cb.like(root.get("name"), "%"+book.getName()+"%"));
+					}
+					if(book.getAuthor()!=null&&!"".equals(book.getAuthor())) {
+						predicate.getExpressions().add(cb.like(root.get("author"), "%"+book.getAuthor()+"%"));
+					}
+				}
+				return predicate;
+			}
+		});
+		mav.addObject("bookList",bookList);
+		mav.setViewName("bookList");
+		return mav;
 	}
 	
 }
